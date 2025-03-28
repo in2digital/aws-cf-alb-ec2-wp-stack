@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # Log all output to a file
 mkdir -p /etc/logs
-exec > >(tee -a /etc/logs/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+exec > >(tee -a /etc/logs/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
 # --- CONFIG ---
 REPO_BASE="https://raw.githubusercontent.com/in2digital/aws-cf-alb-ec2-stack/main"
@@ -12,9 +12,10 @@ REPO_BASE="https://raw.githubusercontent.com/in2digital/aws-cf-alb-ec2-stack/mai
 apt update && apt upgrade -y
 apt install -y nginx php-fpm php-mysql php-xml php-curl php-mbstring php-zip php-gd php-imagick curl unzip
 
-# --- INSTALL CLOUDWATCH LOG AGENT ---
+# --- INSTALL CLOUDWATCH AGENT ---
 wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
-sudo dpkg -i amazon-cloudwatch-agent.deb || sudo apt install -f -y
+dpkg -i amazon-cloudwatch-agent.deb || apt install -f -y
+rm -f amazon-cloudwatch-agent.deb
 
 # --- DETECT PHP VERSION ---
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
@@ -34,5 +35,6 @@ ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/wordpress
 # --- FINAL RESTART ---
 systemctl restart php${PHP_VERSION}-fpm
 systemctl restart nginx
-systemctl restart awslogsd.service
+systemctl restart amazon-cloudwatch-agent
+
 echo "User data script completed successfully." | tee -a /etc/logs/user-data.log
