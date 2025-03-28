@@ -10,7 +10,11 @@ REPO_BASE="https://raw.githubusercontent.com/in2digital/aws-cf-alb-ec2-stack/mai
 
 # --- SYSTEM PREP ---
 apt update && apt upgrade -y
-apt install -y nginx php-fpm php-mysql php-xml php-curl php-mbstring php-zip php-gd php-imagick curl unzip awslogs
+apt install -y nginx php-fpm php-mysql php-xml php-curl php-mbstring php-zip php-gd php-imagick curl unzip
+
+# --- INSTALL CLOUDWATCH LOG AGENT ---
+wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
+sudo dpkg -i amazon-cloudwatch-agent.deb || sudo apt install -f -y
 
 # --- DETECT PHP VERSION ---
 PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
@@ -25,13 +29,7 @@ systemctl enable php${PHP_VERSION}-fpm
 # --- CONFIGURE NGINX ---
 rm -f /etc/nginx/sites-enabled/default
 curl -fsSL "$REPO_BASE/nginx/wordpress.conf" -o /etc/nginx/sites-available/wordpress
-ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/default
-
-# --- CONFIGURE CLOUDWATCH LOGGING ---
-curl -fsSL "$REPO_BASE/cloudwatch/awslogs.conf" -o /etc/awslogs/awslogs.conf
-
-systemctl enable awslogsd.service
-systemctl start awslogsd.service
+ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/wordpress
 
 # --- FINAL RESTART ---
 systemctl restart php${PHP_VERSION}-fpm
